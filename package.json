@@ -1,0 +1,23 @@
+{
+  "name": "paste",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^1",
+    "smooth-scrollbar": "^8.8.4",
+    "tauri-plugin-store-api": "github:tauri-apps/tauri-plugin-store#v1",
+    "vue": "^3.3.4"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1",
+    "@vitejs/plugin-vue": "^5.0.4",
+    "vite": "^5.0.0"
+  }
+}
