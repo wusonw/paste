@@ -2,7 +2,7 @@
 import Scrollbar from 'smooth-scrollbar';
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { Store } from "tauri-plugin-store-api";
-import { clear, readText, startListening, onClipboardUpdate, hasImage, readImageObjectURL, hasText } from 'tauri-plugin-clipboard-api'
+import { readText, startListening, onClipboardUpdate, hasImage, readImageBase64, hasText, readImageObjectURL } from 'tauri-plugin-clipboard-api'
 import { listen } from '@tauri-apps/api/event';
 
 const STORED_COUNT = 30
@@ -11,7 +11,6 @@ const clipRecords = ref([])
 const isLoadingClipRecords = ref(false)
 
 const loadClipRecords = async () => {
-  console.log('reload')
   try {
     isLoadingClipRecords.value = true
     const storedClipped = await clipStore.get('clipRecords') || []
@@ -23,7 +22,7 @@ const loadClipRecords = async () => {
   }
 }
 
-onClipboardUpdate(async () => {
+const unListenClipboardChange = onClipboardUpdate(async () => {
   let record
 
   if (await hasText()) {
@@ -35,11 +34,13 @@ onClipboardUpdate(async () => {
   }
   else if (await hasImage()) {
     record = {
-      type: 'TEXT',
-      value: await readImageObjectURL(),
+      type: 'IMAGE',
+      value: `data:image/png;base64,${await readImageBase64()}`,
       time: new Date()
     }
   }
+
+  console.log(record.value)
 
   if (record) {
     await clipStore.set('clipRecords', [record, ...clipRecords.value])
@@ -54,6 +55,9 @@ onMounted(async () => {
   await loadClipRecords()
   await startListening()
   listen('custom://reload-clip-records', loadClipRecords)
+})
+onBeforeUnmount(async () => {
+  await unListenClipboardChange()
 })
 </script>
 <template>
