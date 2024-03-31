@@ -36,6 +36,18 @@ body {
   height: 100vh;
 }
 
+.center-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  font-size: x-large;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
 .container {
   cursor: default;
   padding: 8px;
@@ -52,32 +64,41 @@ body {
   padding: 10px 1rem;
   transition: .3s all ease-in-out;
   background-color: rgb(229 229 229);
+  border: 2px solid transparent;
 }
 
 .clip-item:hover {
   transform: scale(0.99);
   cursor: pointer;
-  background-color: rgb(212 212 212);
+  border: 2px solid cyan;
 }
 
 .clip-item-title {
   display: flex;
   justify-content: space-between;
   font-size: small;
+
 }
 
-.clip-item-title .string-type {
+.clip-item-title .text-type {
   /* background-color: #646cff; */
-  background-color: rgb(150, 175, 235);
   border-radius: 8px;
   padding: 0 .5rem;
+  background-color: rgb(150, 175, 235);
+}
+
+.clip-item-title .image-type {
+  /* background-color: #646cff; */
+  border-radius: 8px;
+  padding: 0 .5rem;
+  background-color: rgb(235, 150, 163);
 }
 
 .clip-item-title .clip-time {
   opacity: 0.6;
 }
 
-.clip-item-string {
+.clip-item-text {
   margin: 15px 0 10px 0;
   font-size: 18px;
   -webkit-line-clamp: 6;
@@ -86,6 +107,13 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: pre-line;
+}
+
+.clip-item-image {
+  img {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -99,7 +127,7 @@ body {
   }
 
   .clip-item:hover {
-    background-color: rgba(120, 113, 108, 1);
+    border: 2px solid cyan;
   }
 
 }

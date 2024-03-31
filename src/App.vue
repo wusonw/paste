@@ -1,63 +1,81 @@
 <script setup>
 import Scrollbar from 'smooth-scrollbar';
-import { ref, onMounted } from 'vue';
-import { writeText, readText } from '@tauri-apps/api/clipboard';
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { Store } from "tauri-plugin-store-api";
+import { clear, readText, startListening, onClipboardUpdate, hasImage, readImageObjectURL, hasText } from 'tauri-plugin-clipboard-api'
+import { listen } from '@tauri-apps/api/event';
 
 const STORED_COUNT = 30
-const store = new Store(".clip-store.dat");
-const clipped = ref([])
+const clipStore = new Store(".clip-store.dat");
+const clipRecords = ref([])
+const isLoadingClipRecords = ref(false)
 
-const loadClippedFromStore = async () => {
-  const storedClipped = await store.get('clipped')
-  clipped.value = (storedClipped || [])
-    .toSorted((a, b) => b?.time > a?.time)
+const loadClipRecords = async () => {
+  console.log('reload')
+  try {
+    isLoadingClipRecords.value = true
+    const storedClipped = await clipStore.get('clipRecords') || []
+    clipRecords.value = storedClipped.toSorted((a, b) => b?.time > a?.time)
+    isLoadingClipRecords.value = false
+  } catch {
+    clipRecords.value = []
+    isLoadingClipRecords.value = false
+  }
 }
 
-const watchClipboard = () => {
-  setInterval(async () => {
-    const time = new Date()
-    const currentClipped = await readText()
-    const clickedClipped = await store.get('clicked')
-    if (currentClipped === clickedClipped) return
-    const storedClipped = (await store.get('clipped') || []).toSorted((a, b) => b?.time > a?.time)
-    const storeCurrentClipped = async () => {
-      let clippedToStore = storedClipped.slice(0, STORED_COUNT)
-      await store.set('clipped',
-        [...clippedToStore, {
-          type: 'TXT',
-          value: currentClipped,
-          time
-        }])
+onClipboardUpdate(async () => {
+  let record
+
+  if (await hasText()) {
+    record = {
+      type: 'TEXT',
+      value: await readText(),
+      time: new Date()
     }
-    if (currentClipped === storedClipped?.[0]?.value) return
-    await storeCurrentClipped()
-    await loadClippedFromStore()
-  }, 1000)
-}
+  }
+  else if (await hasImage()) {
+    record = {
+      type: 'TEXT',
+      value: await readImageObjectURL(),
+      time: new Date()
+    }
+  }
 
-const writeTextToClipboard = async (value) => {
-  await store.set('clicked', value)
-  await writeText(value)
-}
+  if (record) {
+    await clipStore.set('clipRecords', [record, ...clipRecords.value])
+    await loadClipRecords()
+  }
+
+
+})
 
 onMounted(async () => {
   Scrollbar.init(document.querySelector('.page'))
-  await loadClippedFromStore()
-  watchClipboard()
+  await loadClipRecords()
+  await startListening()
+  listen('custom://reload-clip-records', loadClipRecords)
 })
 </script>
 <template>
   <div class="page">
-    <div class="container">
-      <div v-for="c in clipped">
-        <div class="clip-item" @dblclick="writeTextToClipboard(c.value)">
+    <div v-if="isLoadingClipRecords" class="center-text">
+      Loading...
+    </div>
+    <div v-else-if="!isLoadingClipRecords && clipRecords.length == 0" class="center-text">
+      No Clipped
+    </div>
+    <div v-else class="container">
+      <div v-for="r in clipRecords">
+        <div class="clip-item">
           <div class="clip-item-title">
-            <span class="string-type">{{ c.type }}</span>
-            <span class="clip-time">{{ new Date(c?.time).toLocaleString() }}</span>
+            <span :class="[`${r.type.toLowerCase()}-type`]">{{ r.type }}</span>
+            <span class="clip-time">{{ new Date(r?.time).toLocaleString() }}</span>
           </div>
-          <p class="clip-item-string">
-            {{ c.value }}
+          <p v-if="r.type === 'TEXT'" class="clip-item-text">
+            {{ r.value }}
+          </p>
+          <p v-else-if="r.type === 'IMAGE'" class="clip-item-image">
+            <img :src="r.value" width="100%" />
           </p>
         </div>
       </div>
